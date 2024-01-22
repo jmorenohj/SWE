@@ -137,12 +137,12 @@ namespace Blocks {
     // Define arrays for unknowns:
     // h (water level) and u, v (velocity in x and y direction)
     // hd, ud, and vd are respective CUDA arrays on GPU
-    Tools::Float2D<RealType> h_;  ///< Array that holds the water height for each element
-    Tools::Float2D<RealType> hu_; ///< Array that holds the x-component of the momentum for each element (water height h
+    Tools::Float2D<double> h_;  ///< Array that holds the water height for each element
+    Tools::Float2D<double> hu_; ///< Array that holds the x-component of the momentum for each element (water height h
                                   ///< multiplied by velocity in x-direction)
-    Tools::Float2D<RealType> hv_; ///< Array that holds the y-component of the momentum for each element (water height h
+    Tools::Float2D<double> hv_; ///< Array that holds the y-component of the momentum for each element (water height h
                                   ///< multiplied by velocity in y-direction)
-    Tools::Float2D<RealType> b_;  ///< Array that holds the bathymetry data (sea floor elevation) for each element
+    Tools::Float2D<double> b_;  ///< Array that holds the bathymetry data (sea floor elevation) for each element
 
     /// Type of boundary conditions at Left, Right, Top, and Bottom boundary
     BoundaryType boundary_[4];

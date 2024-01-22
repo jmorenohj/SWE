@@ -31,6 +31,7 @@
 #pragma once
 
 #include "Block.hpp"
+#include <immintrin.h>
 
 #ifdef WITH_SOLVER_HYBRID
 #include "HybridSolver.hpp"
@@ -59,10 +60,10 @@ namespace Blocks {
     Solvers::HybridSolver<RealType> wavePropagationSolver_;
 #elif defined(WITH_SOLVER_FWAVE)
     //! F-wave Riemann solver
-    Solvers::FWaveSolver<RealType> wavePropagationSolver_;
+    Solvers::FWaveSolver<__m256d> wavePropagationSolver_;
 #elif defined(WITH_SOLVER_AUGRIE)
     //! Approximate Augmented Riemann solver
-    Solvers::AugRieSolver<RealType> wavePropagationSolver_;
+    Solvers::AugRieSolver<RealType> wavePropagationSolver_;solver
 #endif
 
     //! net-updates for the heights of the cells on the left sides of the vertical edges.
@@ -138,7 +139,8 @@ namespace Blocks {
       Tools::Float2D<RealType>& hv
     );
     ~WavePropagationBlock() override = default;
-
+    
+    double getMaxValue(__m256d &vec);
     /**
      * Compute net updates for the block.
      * The member variable #maxTimestep will be updated with the

@@ -48,7 +48,7 @@ namespace Tools {
     int rows_;
     int cols_;
 
-    T* data_;
+   
 
     bool allocateMemory_;
 
@@ -60,6 +60,7 @@ namespace Tools {
      * @param cols number of columns (i.e., elements in horizontal direction)
      * @param rows rumber of rows (i.e., elements in vertical directions)
      */
+     double* data_;
     Float2D(int cols, int rows, bool allocateMemory = true):
       rows_(rows),
       cols_(cols),
@@ -80,7 +81,7 @@ namespace Tools {
      * @param rows rumber of rows (i.e., elements in vertical directions)
      * @param data pointer to a suitably allocated region of memory to be used for thew array elements
      */
-    Float2D(int cols, int rows, T* data):
+    Float2D(int cols, int rows, double* data):
       rows_(rows),
       cols_(cols),
       data_(data),
@@ -95,7 +96,7 @@ namespace Tools {
      * @param rows rumber of rows (i.e., elements in vertical directions)
      * @param data pointer to a suitably allocated region of memory to be used for thew array elements
      */
-    Float2D(Float2D<T>& data, bool shallowCopy):
+    Float2D(Float2D<double>& data, bool shallowCopy):
       rows_(data.rows_),
       cols_(data.cols_),
       allocateMemory_(!shallowCopy) {

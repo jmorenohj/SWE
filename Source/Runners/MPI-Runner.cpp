@@ -364,7 +364,7 @@ int main(int argc, char** argv) {
 
       //! Maximum allowed time steps of all blocks
       RealType maxTimeStepWidthGlobal = RealType(0.0);
-
+      std::cout<<iterations<<' '<<maxTimeStepWidthGlobal<<std::endl;
       // Determine smallest time step of all blocks
       MPI_Allreduce(&maxTimeStepWidth, &maxTimeStepWidthGlobal, 1, MY_MPI_FLOAT, MPI_MIN, MPI_COMM_WORLD);
 

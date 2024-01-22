@@ -58,13 +58,13 @@ if(ENABLE_GPI)
     target_compile_definitions(${META_PROJECT_NAME} PUBLIC ENABLE_GPI)
 endif()
 
-option(ENABLE_VECTORIZATION "Enable auto-vectorization of the block iteration on the CPU (only supported solvers), and in Release Mode." OFF)
+option(ENABLE_VECTORIZATION "Enable auto-vectorization of the block iteration on the CPU (only supported solvers), and in Release Mode." ON)
 if(ENABLE_VECTORIZATION)
     target_compile_options(${META_PROJECT_NAME} PUBLIC
-        $<$<CXX_COMPILER_ID:Clang>: -march=native -fno-math-errno>
-        $<$<CXX_COMPILER_ID:AppleClang>: -march=native -fno-math-errno>
-        $<$<CXX_COMPILER_ID:Intel>: -xHost>
-        $<$<CXX_COMPILER_ID:GNU>: -march=native -ffast-math -fassociative-math>
+        $<$<CXX_COMPILER_ID:Clang>: -march=native -mavx  -fno-math-errno>
+        $<$<CXX_COMPILER_ID:AppleClang>: -march=native -mavx  -fno-math-errno>
+        $<$<CXX_COMPILER_ID:Intel>: -mavx  -xHost>
+        $<$<CXX_COMPILER_ID:GNU>: -march=native -mavx  -ffast-math -fassociative-math>
     )
     target_compile_definitions(${META_PROJECT_NAME} PUBLIC ENABLE_VECTORIZATION)
 endif()
@@ -84,6 +84,14 @@ if(ENABLE_NETCDF)
     endif()
     #target_include_system_directories(${META_PROJECT_NAME} PUBLIC ${NETCDF_INCLUDES})
     target_include_directories(${META_PROJECT_NAME} PUBLIC ${NETCDF_INCLUDES} )
+endif()
+
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-mavx2" COMPILER_SUPPORTS_AVX2)
+
+if(COMPILER_SUPPORTS_AVX2)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
+    message(STATUS "AVX2 support enabled.")
 endif()
 
 set(WITH_SOLVER "FWave" CACHE STRING "Choose which Riemann solver to use (Default=FWave, AugRie, HLLE, Rusanov)")

@@ -31,6 +31,11 @@
 #include "WavePropagationBlock.hpp"
 
 #include <iostream>
+#include <immintrin.h>
+
+
+
+
 
 Blocks::WavePropagationBlock::WavePropagationBlock(int nx, int ny, RealType dx, RealType dy):
   Block(nx, ny, dx, dy),
@@ -59,55 +64,81 @@ Blocks::WavePropagationBlock::WavePropagationBlock(
   hvNetUpdatesBelow_(nx, ny + 1),
   hvNetUpdatesAbove_(nx, ny + 1) {}
 
+
+
+
 void Blocks::WavePropagationBlock::computeNumericalFluxes() {
   // Maximum (linearized) wave speed within one iteration
   RealType maxWaveSpeed = RealType(0.0);
-
+//_mm256_loadu_pd(&hu_.data_[(i-1)*(nx_+2)+j])
   // Compute the net-updates for the vertical edges
   for (int i = 1; i < nx_ + 2; i++) {
-    for (int j = 1; j < ny_ + 1; ++j) {
-      RealType maxEdgeSpeed = RealType(0.0);
-
+    for (int j = 1; j < ny_ + 1; j+=4) {
+      __m256d maxEdgeSpeed = _mm256_setzero_pd();
+      __m256d hleft_simd = _mm256_loadu_pd(&h_.data_[(i-1)*(nx_+2)+j]);
+      __m256d hright_simd = _mm256_loadu_pd(&h_.data_[i*(nx_+2)+j]);
+      __m256d huleft_simd = _mm256_loadu_pd(&hu_.data_[(i-1)*(nx_+2)+j]);
+      __m256d huright_simd = _mm256_loadu_pd(&hu_.data_[i*(nx_+2)+j]);
+      __m256d bleft_simd = _mm256_loadu_pd(&b_.data_[(i-1)*(nx_+2)+j]);
+      __m256d bright_simd = _mm256_loadu_pd(&b_.data_[i*(nx_+2)+j]);
+      __m256d hNetUpdatesLeft_simd = _mm256_loadu_pd(&hNetUpdatesLeft_.data_[(i-1)*(nx_+2)+j-1]);
+      __m256d hNetUpdatesRight_simd = _mm256_loadu_pd(&hNetUpdatesRight_.data_[(i-1)*(nx_+2)+j-1]);
+      __m256d huNetUpdatesLeft_simd = _mm256_loadu_pd(&huNetUpdatesLeft_.data_[(i-1)*(nx_+2)+j-1]);
+      __m256d huNetUpdatesRight_simd = _mm256_loadu_pd(&huNetUpdatesRight_.data_[(i-1)*(nx_+2)+j-1]);
       wavePropagationSolver_.computeNetUpdates(
-        h_[i - 1][j],
-        h_[i][j],
-        hu_[i - 1][j],
-        hu_[i][j],
-        b_[i - 1][j],
-        b_[i][j],
-        hNetUpdatesLeft_[i - 1][j - 1],
-        hNetUpdatesRight_[i - 1][j - 1],
-        huNetUpdatesLeft_[i - 1][j - 1],
-        huNetUpdatesRight_[i - 1][j - 1],
+        hleft_simd,
+        hright_simd,
+        huleft_simd,
+        huright_simd,
+        bleft_simd,
+        bright_simd,
+        hNetUpdatesLeft_simd,
+        hNetUpdatesRight_simd,
+        huNetUpdatesLeft_simd,
+        huNetUpdatesRight_simd,
         maxEdgeSpeed
       );
-
+      alignas(32) double vecArr[4];_mm256_storeu_pd(vecArr, maxEdgeSpeed);
+      double maximum = vecArr[0];
+      for(int i = 0;i<4;i++)maximum = std::max(maximum,vecArr[i]);
       // Update the thread-local maximum wave speed
-      maxWaveSpeed = std::max(maxWaveSpeed, maxEdgeSpeed);
+      maxWaveSpeed = std::max(maxWaveSpeed, maximum);
     }
   }
 
   // Compute the net-updates for the horizontal edges
   for (int i = 1; i < nx_ + 1; i++) {
-    for (int j = 1; j < ny_ + 2; j++) {
-      RealType maxEdgeSpeed = RealType(0.0);
+    for (int j = 1; j < ny_ + 2; j+=4) {
+      __m256d maxEdgeSpeed = _mm256_setzero_pd();
+      __m256d hleft_simd = _mm256_loadu_pd(&h_.data_[i*(nx_+2)+j-1]);
+      __m256d hright_simd = _mm256_loadu_pd(&h_.data_[i*(nx_+2)+j]);
+      __m256d hvleft_simd = _mm256_loadu_pd(&hv_.data_[i*(nx_+2)+j-1]);
+      __m256d hvright_simd = _mm256_loadu_pd(&hv_.data_[i*(nx_+2)+j]);
+      __m256d bleft_simd = _mm256_loadu_pd(&b_.data_[i*(nx_+2)+j-1]);
+      __m256d bright_simd = _mm256_loadu_pd(&b_.data_[i*(nx_+2)+j]);
+      __m256d hNetUpdatesBelow_simd = _mm256_loadu_pd(&hNetUpdatesBelow_.data_[(i-1)*(nx_+2)+j-1]);
+      __m256d hNetUpdatesAbove_simd = _mm256_loadu_pd(&hNetUpdatesAbove_.data_[(i-1)*(nx_+2)+j-1]);
+      __m256d hvNetUpdatesBelow_simd = _mm256_loadu_pd(&hvNetUpdatesBelow_.data_[(i-1)*(nx_+2)+j-1]);
+      __m256d hvNetUpdatesAbove_simd = _mm256_loadu_pd(&hvNetUpdatesAbove_.data_[(i-1)*(nx_+2)+j-1]);
 
       wavePropagationSolver_.computeNetUpdates(
-        h_[i][j - 1],
-        h_[i][j],
-        hv_[i][j - 1],
-        hv_[i][j],
-        b_[i][j - 1],
-        b_[i][j],
-        hNetUpdatesBelow_[i - 1][j - 1],
-        hNetUpdatesAbove_[i - 1][j - 1],
-        hvNetUpdatesBelow_[i - 1][j - 1],
-        hvNetUpdatesAbove_[i - 1][j - 1],
+        hleft_simd,
+        hright_simd,
+        hvleft_simd,
+        hvright_simd,
+        bleft_simd,
+        bright_simd,
+        hNetUpdatesBelow_simd,
+        hNetUpdatesAbove_simd,
+        hvNetUpdatesBelow_simd,
+        hvNetUpdatesAbove_simd,
         maxEdgeSpeed
       );
-
+      alignas(32) double vecArr[4];_mm256_storeu_pd(vecArr, maxEdgeSpeed);
+      double maximum = vecArr[0];
+      for(int i = 0;i<4;i++)maximum = std::max(maximum,vecArr[i]);
       // Update the thread-local maximum wave speed
-      maxWaveSpeed = std::max(maxWaveSpeed, maxEdgeSpeed);
+      maxWaveSpeed = std::max(maxWaveSpeed, maximum);
     }
   }
 
